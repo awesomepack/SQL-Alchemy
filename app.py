@@ -3,6 +3,36 @@
 from flask import Flask
 from flask import jsonify
 
+# Importing SQL Alchemy ORM
+import sqlalchemy
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import Session, session
+from sqlalchemy import create_engine , func
+
+# Importing date functions
+import datetime as dt
+from datetime import datetime
+from datetime import timedelta
+
+
+# Setting up connection to the hawaii.sqlite database
+
+# Defining engine
+engine = create_engine("sqlite:///hawaii.sqlite")
+
+Base = automap_base()
+
+Base.prepare(engine , reflect = True)
+
+# Creating references for the tables in the database
+stations = Base.classes.station
+
+precip = Base.classes.measurement
+
+
+
+# Creating our flask routes
+
 # Defining an app
 app = Flask(__name__);
 
@@ -26,11 +56,92 @@ def home():
     return jsonify(route_dict)
 
 
-# Defining a new route for my homepage
-@app.route('/about')
-def about():
-    print('Request received for about page...');
-    return 'Welcome to my about page'
+# Defining the precipitation route
+@app.route('/api/v1.0/precipitation')
+def precipitation():
+    # Creating session
+    session = Session(engine)
+
+    # Querying measurement table for date and prcp columns
+    precip_query = session.query(precip.date , precip.prcp).all()
+
+    session.close()
+
+    # defining dictionary structure
+    precip_dict = {
+        'Date': [] ,
+        'precip' : []
+    }
+
+    for row in precip_query:
+        precip_dict['Date'].append(row.date);
+        precip_dict['precip'].append(row.prcp);
+
+
+    return jsonify(precip_dict)
+
+# Defining station route
+@app.route('/api/v1.0/stations')
+def station():
+    session = Session(engine)
+
+    station_query = session.query(stations.station).all()
+
+    session.close()
+
+    # Dict
+    station_dict = {
+        'Station': []
+    }
+
+    for row in station_query:
+        station_dict['Station'].append(row.station)
+    
+    return jsonify(station_dict)
+
+# defining tobs route
+@app.route('/api/v1.0/tobs')
+def tobs():
+
+    # Referencing the dates
+    recent_date = '2017-08-23'
+    start_date = dt.datetime.strptime(recent_date , '%Y-%m-%d')
+    end_date = start_date - dt.timedelta(days = 365)
+    session = Session(engine)
+
+    # Forming the query
+    most_active_query = session.query(precip).filter(precip.station == 'USC00519281')\
+    .filter(precip.date\
+        .between(dt.datetime.strftime(end_date , '%Y-%m-%d') , dt.datetime.strftime(start_date , '%Y-%m-%d'))).all()
+    
+    # Defining dict
+
+    most_active_dict = {
+        'Temp': []
+    }
+
+    # Populating the query
+    for row in most_active_query:
+        most_active_dict['Temp'].append(row.tobs)
+
+
+
+    return jsonify(most_active_dict)   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug = True)
