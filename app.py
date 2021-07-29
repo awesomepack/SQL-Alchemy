@@ -149,6 +149,24 @@ def date_func(some_date):
 
     return jsonify(stats_dict)
 
+# Defining the date_range route , date is in y-m-d format
+@app.route('/api/v1.0/<start_date>/<end_date>')
+def date_range(start_date , end_date):
+    session = Session(engine)
+
+    max_temp = session.query(precip , func.max(precip.tobs)).filter(precip.station == 'USC00519281' ).filter(precip.date.between(end_date , start_date)).all()
+    min_temp = session.query(precip , func.min(precip.tobs)).filter(precip.station == 'USC00519281').filter(precip.date.between(end_date , start_date)).all()
+    avg_temp = session.query(precip , func.avg(precip.tobs)).filter(precip.station == 'USC00519281').filter(precip.date.between(end_date , start_date)).all()
+
+    # Defining dict
+
+    stats_dict = {
+        'max': max_temp[0][1] , 
+        'min': min_temp[0][1] , 
+        'avg': avg_temp[0][1] 
+    }
+
+    return jsonify(stats_dict)
 
 
 
