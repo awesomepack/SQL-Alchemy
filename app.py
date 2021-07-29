@@ -126,10 +126,28 @@ def tobs():
 
 
 
-    return jsonify(most_active_dict)   
+    return jsonify(most_active_dict)
+
+# Defining route with start and end date
+@app.route('/api/v1.0/<some_date>')
+def date_func(some_date):
+
+    session = Session(engine)
 
 
+    max_temp = session.query(precip , func.max(precip.tobs)).filter(precip.station == 'USC00519281' ).filter(precip.date >= some_date).all()
+    min_temp = session.query(precip , func.min(precip.tobs)).filter(precip.station == 'USC00519281').filter(precip.date >= some_date).all()
+    avg_temp = session.query(precip , func.avg(precip.tobs)).filter(precip.station == 'USC00519281').filter(precip.date >= some_date).all()
 
+    # defining dict
+
+    stats_dict = {
+        'max': max_temp[0][1] ,
+        'min': min_temp[0][1] ,
+        'avg': avg_temp[0][1]
+    }
+
+    return jsonify(stats_dict)
 
 
 
